@@ -1,0 +1,279 @@
+/*
+ * Custom JS code to run the front-end UI for the RelayShield
+ * @author JPK
+ * @version 2.1
+ *
+ */
+
+// capture up to 4 forms
+var forms = document.querySelectorAll("form");
+
+// submit & cancel all
+var submitAllButton = document.querySelector("#submitAll");
+
+// add an event listener on each form
+for (i = 1; i <= forms.length; i++) {
+  const RELAYNUM = i;
+  let targetForm = document.querySelector("#tank" + RELAYNUM);
+  let targetLog = document.querySelector("#log" + RELAYNUM);
+
+  if (targetForm) {
+	//onload event listener
+  targetForm.addEventListener("load", function(event) {
+      
+      // the intermittent cancel button
+      let cancelButton =
+        '\t<button onclick="cancelRun(' + RELAYNUM + ', \'' + deviceID + '\', \'' + access_token + '\');">Cancel!</button>';
+
+      event.preventDefault();
+
+// prodding the RS for status
+      fetch(
+        "https:\/\/api.particle.io/v1/devices/" +
+          document.querySelector("#device" + RELAYNUM).value + 
+          "/rBusy" + RELAYNUM + "?access_token=" +
+          document.querySelector("#token" + RELAYNUM).value + "&format=raw"
+      )
+         .then(response => response.text()
+		 .then(text => { 
+						if (text == 'true') {
+							targetLog.textContent = "Status: busy, please wait or cancel!";
+							disable_form(targetForm);
+						} else if (text == 'false') {
+							targetLog.textContent = "Status: idle.";
+							enable_form(targetForm);
+						} else {
+							targetLog.textContent = "Status: connection failure!!!";
+						}
+						})
+		 .then(response => { reloadById("#tank" + RELAYNUM); }) )
+         .catch(error => console.error("Error:", error));
+    });
+  
+	
+
+    //onsubmit event listener
+    targetForm.addEventListener("submit", function(event) {
+      let data = new FormData(targetForm);
+      let output = "Status: ";
+      let deviceID = "";
+      let access_token = "";
+
+      // format data for submission and for the status bar
+      for (const entry of data) {
+        if (entry[0] === "device") deviceID = entry[1];
+        if (entry[0] === "token") access_token = entry[1];
+        if (entry[1] === "auto") {
+          data.arg = "t:" + RELAYNUM + ",";
+          output += "(" + entry[1] + ") ";
+        } else if (entry[1] === "manual") {
+          data.arg = "c:" + RELAYNUM + ",";
+          output += "(" + entry[1] + ") ";
+        }
+
+        if (entry[0] === "duration") {
+          data.arg += entry[1];
+          output += entry[1] + " second" + (entry[1] > 1 ? "s" : "");
+          if (data.arg[0] === "c") {
+            data.arg += ";";
+            output += ".";
+          }
+        } else if (entry[0] === "_interval" && data.arg[0] === "t") {
+          data.arg += "," + entry[1] + ";";
+          output +=
+            " every " + entry[1] + " minute" + (entry[1] > 1 ? "s" : "") + ".";
+        }
+      }
+
+      // updates the status bar
+      targetLog.textContent = output;
+
+      // the intermittent cancel button
+      let cancelButton =
+        '\t<button onclick="cancelRun(' + RELAYNUM + ', \'' + deviceID + '\', \'' + access_token + '\');">Cancel!</button>';
+
+      if (data.arg.startsWith("t"))
+        targetLog.insertAdjacentHTML("beforeend", cancelButton);
+      event.preventDefault();
+
+      // on-submit
+      fetch(
+        "https:\/\/api.particle.io/v1/devices/" +
+          deviceID +
+          "/relay?access_token=" +
+          access_token,
+        {
+          method: "POST",
+          mode: "cors",
+          body: JSON.stringify(data),
+          headers: new Headers({ "Content-Type": "application/json" })
+        }
+      )
+        .then(res => res.json())
+        .catch(error => console.error("Error:", error))
+        .then(response => {
+          targetForm.reset();
+	  // console.log("Returned: ", response);
+          prevPage(RELAYNUM);
+        });
+    });
+  } else {
+    // console.log("targetForm is null!");
+  }
+
+
+}
+
+// "paginates" the form, shows next form page
+function nextPage(z) {
+  document.getElementById("radios" + z).style.display = "none";
+  if (document.getElementById("tank" + z)["automan"].value == "auto") {
+    document.getElementById("not_auto_" + z).className = "auto";
+    document.getElementById("_interval" + z).required = true;
+  } else {
+    document.getElementById("not_auto_" + z).className = "not_auto";
+    document.getElementById("_interval" + z).required = false;
+  }
+  document.getElementById("details" + z).style.display = "inline-block";
+}
+
+// shows previous form page
+function prevPage(z) {
+  document.getElementById("radios" + z).style.display = "inline-block";
+  document.getElementById("details" + z).style.display = "none";
+}
+
+// cancels an auto run
+function cancelRun(r, devID, aToken) {
+  // let deviceId =  - make cancelRun a part of the eventListener. TODO.
+  fetch(
+    "https:\/\/api.particle.io/v1/devices/" + devID + "/relay?access_token=" + aToken,
+    {
+      method: "POST",
+      mode: "cors",
+      body: JSON.stringify({ arg: "x:" + r + ";" }),
+      headers: new Headers({ "Content-Type": "application/json" })
+    }
+  )
+    .then(res => res.json())
+    .catch(error => console.error("Error:", error))
+    .then(response => console.log("Success:", response));
+  prevPage(r);
+  document.querySelector("#log" + r).textContent = "Status: Run cancelled.";
+}
+
+function multiSubmit() {
+        for (i = 1; i <= forms.length; i++) {
+                document.getElementById("tank" + i).submit();
+        }
+}
+
+// cancels all runs
+function cancelAll(devID, aToken, relays) {
+  // let deviceId =  - make cancelRun a part of the eventListener. TODO.
+  fetch(
+    "https://api.particle.io/v1/devices/" + devID + "/relay?access_token=" + aToken,
+    {
+      method: "POST",
+      mode: "cors",
+      body: JSON.stringify({ arg: "x:9;" }),
+      headers: new Headers({ "Content-Type": "application/json" })
+    }
+  )
+    .then(res => res.json())
+    .catch(error => console.error("Error:", error))
+    .then(response => console.log("Success:", response));
+  prevPages(relays);
+  // document.querySelector("#log" + r).textContent = "Status: Run cancelled.";
+}
+
+// shows previous form pages
+function prevPages(z) {
+  for (k = 1; k <= z; k++) {
+    document.getElementById("radios" + k).style.display = "inline-block";
+    document.getElementById("details" + k).style.display = "none";
+    document.querySelector("#log" + k).textContent = "Status: Run cancelled.";
+  }
+}
+
+// The polling function
+function poll(fn, timeout, interval) {
+  var dfd = new Deferred();
+  var endTime = Number(new Date()) + (timeout || 2000);
+  interval = interval || 100;
+
+  (function p() {
+    // If the condition is met, we're done!
+    if (fn()) {
+      dfd.resolve();
+    }
+    // If the condition isn't met but the timeout hasn't elapsed, go again
+    else if (Number(new Date()) < endTime) {
+      setTimeout(p, interval);
+    }
+    // Didn't match and too much time, reject!
+    else {
+      dfd.reject(new Error('timed out for ' + fn + ': ' + arguments));
+    }
+  })();
+
+  return dfd.promise;
+}
+
+/*
+ * Disables and enables every input, textarea, button and select elements inside
+ * a form-element.
+ *
+ * Enhanced by JPK (Originally by Magnus Fredlundh)
+ */
+
+// Disables a form.
+function disable_form(form) {
+  var inputs = form.getElementsByTagName('input'),
+      textareas = form.getElementsByTagName('textarea'),
+      buttons = form.getElementsByTagName('button'),
+      selects = form.getElementsByTagName('select');
+
+  disable_elements(inputs);
+  disable_elements(textareas);
+  disable_elements(buttons);
+  disable_elements(selects);
+}
+
+// Disables a collection of form-elements.
+function disable_elements(elements) {
+  var length = elements.length;
+  while(length--) {
+    elements[length].disabled = true;
+  }
+}
+
+// Enables a (previously disabled) form.
+function enable_form(form) {
+  var inputs = form.getElementsByTagName('input'),
+      textareas = form.getElementsByTagName('textarea'),
+      buttons = form.getElementsByTagName('button'),
+      selects = form.getElementsByTagName('select');
+
+  enable_elements(inputs);
+  enable_elements(textareas);
+  enable_elements(buttons);
+  enable_elements(selects);
+}
+
+// Enables a collection of form-elements.
+function enable_elements(elements) {
+  var length = elements.length;
+  while(length--) {
+    elements[length].disabled = false;
+  }
+}
+
+function reloadById(theId){
+    let container = document.querySelector(theId);
+    let content = container.innerHTML;
+    container.innerHTML = content; 
+    
+   //this line is to watch the result in console , you can remove it later	
+    console.log("Refreshed"); 
+}
