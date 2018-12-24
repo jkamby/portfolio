@@ -6,7 +6,7 @@ JPK's Text can be **bold**, _italic_, or ~~strikethrough~~.
 
 [Link to another page](./another-page.html).
 
-[The RelayShield IoT](../relayshieldUI/tanks.html).
+[The RelayShield IoT](../../relayshieldUI/tanks.html).
 
 There should be whitespace between paragraphs.
 
