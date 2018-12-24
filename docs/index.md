@@ -1,5 +1,5 @@
 ---
-JPK's layout: default
+JPK layout: default
 ---
 
 JPK's Text can be **bold**, _italic_, or ~~strikethrough~~.
