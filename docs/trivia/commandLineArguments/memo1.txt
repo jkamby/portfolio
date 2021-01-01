@@ -1,0 +1,46 @@
+HW02 CS110 memo.txt (solution)
+
+No.1:
+
+	For success, one should have the following directory structure: ~home/username/cs110/homework/HW02/ - where username is your UNIX username.
+
+	
+No. 2:
+
+(a)	The three types of errors in Python are: Syntax (Compile-time), Run-time (Exceptions) and Logical errors.
+
+	Syntax errors are the most basic type of error. They arise when the Python parser is unable to understand a line of code. For example when the programmer forgets to close parentheses.
+
+	Run-time errors occur when during program execution something unacceptable happens. For example, trying to access the fifth index in a four-element array.
+
+	Logical errors occur when a program seems to compile and run fine but delivers wrong or inconsistent results. For example, if the program output for 1 + 1 was, say, 3 instead of 2.
+	
+(b)	A programmer should use comments in his/her code for his/her own benefit maintaining their code later and also for others to better understand his/her code.
+
+
+No. 3:
+
+	See useargs.py
+
+
+No. 4:
+
+	Suppose x = T (for True) and y = F (for False):
+	
+	(not (x or y) or (x and y)) or ((x or y) and not (x and y))
+	= (not (T or F) or (T and F)) or ((T or F) and not (T and F))
+	= (not (T) or (F)) or ((T) and not (F))
+	= F or T
+	= T
+	
+	It is observed that no matter what value(s) x and y assume the result for the boolean expression (above) shall always be T (for True).
+ 
+
+No. 5:
+
+	See twoints.py
+
+	
+No. 6:
+
+	See treyfloats.py

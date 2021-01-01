@@ -1,5 +1,0 @@
-P01 CS110 memo.txt (solution)
-
-	trivialcalc.py works according to the specifications. A bit more work could go into its error handling.
-
-	It is a prime candidate for future improvement.
